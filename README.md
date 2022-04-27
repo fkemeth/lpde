@@ -40,11 +40,12 @@ This python package contains functions to learn partial differential equations (
   - `config`: A config dictionary containing
     - `lr`: The initial learning rate
     - `patience`: The patience used for the learning rate scheduler
-    - `reduce_factor`: - The factor by whicg the learning rate is reduced when loss does not decrease.
+    - `reduce_factor`: - The factor by whicg the learning rate is reduced when loss does not decrease
+    - `weight_decay`: - Weight decay factor for regularization
   - `path`: String to the directory where the trained model shall be saved
 
 
-See [the GitHub repo](https://github.com/fkemeth/emergent_pdes) for example usages.
+See [this GitHub repo](https://github.com/fkemeth/emergent_pdes) for example usages.
 
 ISSUES
 ---------

@@ -63,6 +63,7 @@ class Network(torch.nn.Module):
     def __init__(self, config: ConfigParser, n_vars: int):
         super(Network, self).__init__()
         self.kernel_size = int(config["kernel_size"])
+        self.off_set = int((self.kernel_size-1)/2)
         self.n_derivs = int(config["n_derivs"])
         self.device = config['device']
         self.use_param = config.getboolean("use_param")
