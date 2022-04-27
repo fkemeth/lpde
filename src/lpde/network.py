@@ -1,11 +1,20 @@
 """
 Copyright © 2022 Felix P. Kemeth
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software
+and associated documentation files (the “Software”), to deal in the Software without
+restriction, including without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
 ###############################################################################
@@ -21,6 +30,24 @@ import torch
 import numpy as np
 
 import findiff
+
+
+class Swish(torch.nn.Module):
+    """Swish nonlinear activation function."""
+
+    def forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through activation function.
+
+        Arguments
+        -------
+        input_tensor        - Tensor with input features
+
+        Returns
+        -------
+        Activations after nonlinear activation
+        """
+        return input_tensor * torch.sigmoid(input_tensor)
 
 
 class Network(torch.nn.Module):
@@ -54,7 +81,7 @@ class Network(torch.nn.Module):
         for _ in range(int(config["n_layers"])):
             layers.append(torch.nn.Conv1d(
                 num_features, n_channels, [1], stride=1, padding=0, bias=True))
-            layers.append(torch.nn.Tanh())
+            layers.append(Swish())
             num_features = n_channels
 
         # Output layer
@@ -113,9 +140,11 @@ class Network(torch.nn.Module):
         -------
         Spatial derivative tensor
         """
-        finite_diffs = torch.nn.functional.conv1d(input_tensor,
-                                                  self.coeffs,
-                                                  groups=input_tensor.shape[1])
+        finite_diffs = torch.cat([
+            torch.nn.functional.conv1d(
+                input_tensor[:, i].unsqueeze(1),
+                self.coeffs) for i in range(input_tensor.shape[1])
+        ], dim=1)
         scales = torch.cat([torch.pow(delta_x.unsqueeze(1), i)
                             for i in range(self.coeffs.shape[0])], axis=-1)
         scales = scales.repeat(1, self.n_vars)
