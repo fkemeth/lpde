@@ -266,8 +266,9 @@ class Model:
         """
         left_bounds, _, right_bounds, _, _, param = dataset.get_data(True)
         data = []
-        data0 = svd.inverse_transform(
-            svd.transform(dataset.x_data[idx].reshape(1, -1)))
+        if svd:
+            data0 = svd.inverse_transform(
+                svd.transform(dataset.x_data[idx].reshape(1, -1)))
         data.append(data0.reshape(2, -1))
 
         for i in range(idx, horizon+idx):
@@ -282,8 +283,9 @@ class Model:
             prediction = data[-1][:, dataset.off_set:-dataset.off_set] + dataset.delta_t*pred_f
 
             prediction = np.concatenate((left_bounds[i+1], prediction, right_bounds[i+1]), axis=1)
-            prediction = svd.inverse_transform(
-                svd.transform(prediction.reshape(1, -1)))
+            if svd:
+                prediction = svd.inverse_transform(
+                    svd.transform(prediction.reshape(1, -1)))
             data.append(prediction.reshape(2, -1))
         return np.array(data)
 
