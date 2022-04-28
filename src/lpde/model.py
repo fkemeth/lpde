@@ -269,6 +269,8 @@ class Model:
         if svd:
             data0 = svd.inverse_transform(
                 svd.transform(dataset.x_data[idx].reshape(1, -1)))
+        else:
+            data0 = dataset.x_data[idx].reshape(1, -1)
         data.append(data0.reshape(2, -1))
 
         for i in range(idx, horizon+idx):
