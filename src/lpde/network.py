@@ -73,7 +73,7 @@ class Network(torch.nn.Module):
 
         layers = []
         if self.use_param:
-            num_features = int(self.n_vars*(self.n_derivs+1)+config["num_params"])
+            num_features = int(self.n_vars*(self.n_derivs+1)+int(config["num_params"]))
         else:
             num_features = int(self.n_vars*(self.n_derivs+1))
 
@@ -172,9 +172,8 @@ class Network(torch.nn.Module):
         # Calculate derivatives
         input_tensor = self.calc_derivs(input_tensor, delta_x)
         if self.use_param:
-            input_tensor = torch.cat([input_tensor,
-                                      param.unsqueeze(-1).repeat(1, 1, input_tensor.shape[-1])],
-                                     axis=1)
+            param = param.unsqueeze(-1).repeat(1, 1, input_tensor.shape[-1])
+            input_tensor = torch.cat([input_tensor, param], axis=1)
         # Forward through distributed parameter stack
         input_tensor = self.network(input_tensor)
         return input_tensor
