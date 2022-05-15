@@ -25,17 +25,13 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 ###############################################################################
 
 from configparser import ConfigParser
-
-
-import torch
-import numpy as np
-
-from torch.utils.data import Dataset, DataLoader
-from sklearn.decomposition import TruncatedSVD
-
-from scipy.integrate import solve_ivp
-
 from typing import Tuple
+
+import numpy as np
+import torch
+from scipy.integrate import solve_ivp
+from sklearn.decomposition import TruncatedSVD
+from torch.utils.data import DataLoader, Dataset
 
 
 class Model:
@@ -74,8 +70,8 @@ class Model:
         print('Using:', self.device)
         self.net = self.net.to(self.device)
 
-        self.learning_rate = float(config["lr"])
-        self.weight_decay = float(config["weight_decay"])
+        self.learning_rate = float(config['lr'])
+        self.weight_decay = float(config['weight_decay'])
 
         self.criterion = torch.nn.MSELoss(reduction='sum').to(self.device)
 
@@ -85,8 +81,8 @@ class Model:
             weight_decay=self.weight_decay)
 
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, patience=int(config["patience"]),
-            factor=float(config["reduce_factor"]), min_lr=1e-7)
+            self.optimizer, patience=int(config['patience']),
+            factor=float(config['reduce_factor']), min_lr=1e-7)
 
     def pad(self, data: torch.Tensor, target: torch.Tensor) -> Tuple:
         """
@@ -108,13 +104,13 @@ class Model:
         """
         if self.boundary_conditions == 'periodic':
             data = torch.nn.functional.pad(
-                data, (self.net.off_set, self.net.off_set), mode='circular')
+                data, (self.net.get_off_set(), self.net.get_off_set()), mode='circular')
             return data, target
         if self.boundary_conditions == 'no-flux':
             data = torch.nn.functional.pad(
-                data, (self.net.off_set, self.net.off_set), mode='reflect')
+                data, (self.net.get_off_set(), self.net.get_off_set()), mode='reflect')
             return data, target
-        return data, target[:, :, self.net.off_set:-self.net.off_set]
+        return data, target[:, :, self.net.get_off_set():-self.net.get_off_set()]
 
     def train(self) -> float:
         """
@@ -282,9 +278,11 @@ class Model:
                 torch.tensor(param[idx], dtype=torch.get_default_dtype()
                              ).unsqueeze(0).to(self.net.device)
             )[0].cpu().detach().numpy()
-            prediction = data[-1][:, dataset.off_set:-dataset.off_set] + dataset.delta_t*pred_f
+            prediction = data[-1][:, dataset.off_set:-
+                                  dataset.off_set] + dataset.delta_t*pred_f
 
-            prediction = np.concatenate((left_bounds[i+1], prediction, right_bounds[i+1]), axis=1)
+            prediction = np.concatenate(
+                (left_bounds[i+1], prediction, right_bounds[i+1]), axis=1)
             if svd:
                 prediction = svd.inverse_transform(
                     svd.transform(prediction.reshape(1, -1)))
@@ -311,7 +309,7 @@ class Model:
         sol.y numpy array of shape(len(sol.t, n_vars, N))
             Solution obtained from numerical integration.
         """
-        print("Integrating using learned PDE.")
+        print('Integrating using learned PDE.')
         sol = solve_ivp(self.dfdt, [0, t_eval[-1]], initial_condition.flatten(),
                         t_eval=t_eval, args=pars, method='RK45')
         if sol.status == -1:

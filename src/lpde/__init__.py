@@ -16,11 +16,5 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-###############################################################################
-#                                                                             #
-# Apr 2022                                                                    #
-# felix@kemeth.de                                                             #
-#                                                                             #
-###############################################################################
 
-from lpde import utils, network, model
+from lpde import model, network, utils  # noqa # pylint: disable=unused-import

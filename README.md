@@ -4,11 +4,11 @@ INSTALLATION
 ---------
 
 
-Via pip:
+By way of pip:
 
 `pip install lpde`
 
-Via source
+By way of source
 
     git clone https://github.com/fkemeth/lpde
     cd lpde
@@ -40,17 +40,17 @@ This python package contains functions to learn partial differential equations (
   - `config`: A config dictionary containing
     - `lr`: The initial learning rate
     - `patience`: The patience used for the learning rate scheduler
-    - `reduce_factor`: - The factor by whicg the learning rate is reduced when loss does not decrease
+    - `reduce_factor`: - The factor by which the learning rate is reduced when loss does not decrease
     - `weight_decay`: - Weight decay factor for regularization
   - `path`: String to the directory where the trained model shall be saved
 
 
-See [this GitHub repo](https://github.com/fkemeth/emergent_pdes) for example usages.
+See [this GitHub repository](https://github.com/fkemeth/emergent_pdes) for example usages.
 
 ISSUES
 ---------
 
-For questions, please contact (<felix@kemeth.de>), or visit [the GitHub repo](https://github.com/fkemeth/lpde).
+For questions, please contact (<felix@kemeth.de>), or visit [the GitHub repository](https://github.com/fkemeth/lpde).
 
 LICENCE
 ---------
