@@ -17,13 +17,6 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-###############################################################################
-#                                                                             #
-# Apr 2022                                                                    #
-# felix@kemeth.de                                                             #
-#                                                                             #
-###############################################################################
-
 from configparser import SectionProxy
 from typing import Tuple
 

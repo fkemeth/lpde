@@ -17,26 +17,17 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-###############################################################################
-#                                                                             #
-# Apr 2022                                                                    #
-# felix@kemeth.de                                                             #
-#                                                                             #
-###############################################################################
-
 
 def progress(train_loss: float, val_loss: float) -> str:
     """
     Create progress bar description.
 
-    Arguments
-    -------
-    train_loss     - Training loss
-    val_loss       - Validation or test loss
+    Argss
+        train_loss: Training loss
+        val_loss: Validation or test loss
 
-    Returns
-    -------
-    String with training and test loss
+    Returns:
+        String with training and test loss
     """
     return 'Train/Loss: {:.8f} ' \
            'Val/Loss: {:.8f}' \
