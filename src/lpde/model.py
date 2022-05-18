@@ -45,17 +45,14 @@ class Model:
     dataloader_val            - Dataloader with validation or test data
     network                   - PyTorch module with the network topology
     config                    - Config with hyperparameters
-    path                      - Path where the model should be saved
     """
 
     def __init__(self,
                  dataloader_train: DataLoader,
                  dataloader_val: DataLoader,
                  network: torch.nn.Module,
-                 config: ConfigParser,
-                 path: str = ''):
+                 config: ConfigParser):
         super().__init__()
-        self.base_path = path
 
         self.dataloader_train = dataloader_train
         self.dataloader_val = dataloader_val
@@ -66,23 +63,21 @@ class Model:
             self.boundary_conditions = None
 
         self.net = network
-        self.device = self.net.device
-        print('Using:', self.device)
-        self.net = self.net.to(self.device)
+        print('Using:', self.net.device)
+        self.net = self.net.to(self.net.device)
 
-        self.learning_rate = float(config['lr'])
-        self.weight_decay = float(config['weight_decay'])
-
-        self.criterion = torch.nn.MSELoss(reduction='sum').to(self.device)
+        self.criterion = torch.nn.MSELoss(reduction='sum').to(self.net.device)
 
         self.optimizer = torch.optim.Adam(
             self.net.parameters(),
-            lr=self.learning_rate,
-            weight_decay=self.weight_decay)
+            lr=config.getfloat('lr'),
+            weight_decay=config.getfloat('weight_decay'))
 
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, patience=int(config['patience']),
-            factor=float(config['reduce_factor']), min_lr=1e-7)
+            self.optimizer,
+            patience=config.getint('patience'),
+            factor=config.getfloat('reduce_factor'),
+            min_lr=1e-7)
 
     def pad(self, data: torch.Tensor, target: torch.Tensor) -> Tuple:
         """
@@ -128,7 +123,7 @@ class Model:
             self.optimizer.zero_grad()
 
             # move batch to device
-            batch = [tensor.to(self.device) for tensor in batch]
+            batch = [tensor.to(self.net.device) for tensor in batch]
 
             # forward
             data, target = batch[0], batch[2]
@@ -167,7 +162,7 @@ class Model:
         with torch.no_grad():
             for batch in self.dataloader_val:
                 # move batch to device
-                batch = [tensor.to(self.device) for tensor in batch]
+                batch = [tensor.to(self.net.device) for tensor in batch]
 
                 # forward
                 data, target = batch[0], batch[2]
@@ -185,31 +180,29 @@ class Model:
 
         return sum_loss / cnt
 
-    def save_network(self, name: str) -> str:
+    def save_network(self, model_file_name: str) -> str:
         """
         Save model to disk.
 
         Arguments
         -------
-        name         - Model filename.
+        model_file_name   - Model filename.
 
         Returns
         -------
         Model filename.
         """
-        model_file_name = self.base_path+name
         torch.save(self.net.state_dict(), model_file_name)
-        return name
+        return model_file_name
 
-    def load_network(self, name: str) -> None:
+    def load_network(self, model_file_name: str) -> None:
         """
         Load model from disk.
 
         Arguments
         -------
-        name         - Model filename.
+        model_file_name   - Model filename.
         """
-        model_file_name = self.base_path+name
         self.net.load_state_dict(torch.load(model_file_name))
 
     def dfdt(self, time: float, input_array: np.ndarray, delta_x: float) -> np.ndarray:
