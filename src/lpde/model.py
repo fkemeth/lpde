@@ -24,7 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 #                                                                             #
 ###############################################################################
 
-from configparser import ConfigParser
+from configparser import SectionProxy
 from typing import Tuple
 
 import numpy as np
@@ -40,18 +40,18 @@ class Model:
 
     Includes functions to train and validate network.
 
-    Arguments:
-    dataloader_train          - Dataloader with training data
-    dataloader_val            - Dataloader with validation or test data
-    network                   - PyTorch module with the network topology
-    config                    - Config with hyperparameters
+    Args:
+        dataloader_train: Dataloader with training data
+        dataloader_val: Dataloader with validation or test data
+        network: PyTorch module with the network topology
+        config: Config with hyperparameters
     """
 
     def __init__(self,
                  dataloader_train: DataLoader,
                  dataloader_val: DataLoader,
                  network: torch.nn.Module,
-                 config: ConfigParser):
+                 config: SectionProxy):
         super().__init__()
 
         self.dataloader_train = dataloader_train
@@ -83,18 +83,12 @@ class Model:
         """
         Pad input/target depending on boundary conditions and kernel size.
 
-        Arguments
-        -------
-        data: torch tensor
-            Tensor containing the X data.
-        target: torch tensor
-            Tensor containing the Y data.
+        Args:
+            data: Tensor containing the X data.
+            target: Tensor containing the Y data.
 
-        Returns
-        -------
-        data: torch tensor
+        Returns:
             Padded tensor containing the X data.
-        target: torch tensor
             Padded tensor containing the Y data.
         """
         if self.boundary_conditions == 'periodic':
@@ -111,9 +105,8 @@ class Model:
         """
         Train model over one epoch.
 
-        Returns
-        -------
-        Loss averaged over the training data
+        Returns:
+            Loss averaged over the training data
         """
         self.net = self.net.train()
 
@@ -152,9 +145,8 @@ class Model:
 
         Updates best accuracy.
 
-        Returns
-        -------
-        Loss averaged over the validation data
+        Returns:
+            Loss averaged over the validation data
         """
         self.net = self.net.eval()
 
@@ -184,13 +176,11 @@ class Model:
         """
         Save model to disk.
 
-        Arguments
-        -------
-        model_file_name   - Model filename.
+        Args:
+            model_file_name: Model filename.
 
-        Returns
-        -------
-        Model filename.
+        Returns:
+            Model filename.
         """
         torch.save(self.net.state_dict(), model_file_name)
         return model_file_name
@@ -199,28 +189,24 @@ class Model:
         """
         Load model from disk.
 
-        Arguments
-        -------
-        model_file_name   - Model filename.
+        Args:
+            model_file_name: Model filename.
         """
         self.net.load_state_dict(torch.load(model_file_name))
 
-    def dfdt(self, time: float, input_array: np.ndarray, delta_x: float) -> np.ndarray:
+    def dfdt(self,
+             time: float,  # pylint: disable=unused-argument
+             input_array: np.ndarray,
+             delta_x: float) -> np.ndarray:
         """
-        Return learned du/dt of the model.
+        Return du/dt of the model.
 
-        Arguments
-        -------
-        t: float
-            Time step.
-        y: numpy array of shape(N*n_vars)
-            Input snapshot.
-        delta_x: float
-            Delta x of spatial grid.
+        Args:
+            t: Time step.
+            input_array: Input snapshot.
+            delta_x: Delta x of spatial grid.
 
-        Returns
-        -------
-        dudt: numpy array of shape(N*n_vars)
+        Returns:
             Time derative at each point of input snapshot.
         """
         input_array = input_array.reshape(self.net.n_vars, -1)
@@ -243,15 +229,14 @@ class Model:
         """
         Integrate idx'th snapshot of dataset for horizon time steps using Euler stepper.
 
-        Arguments:
-        dataset                   - Dataset containing snapshots
-        svd                       - Truncated SVD for regulairzation
-        idx                       - Index of initial snapshot
-        horizon                   - Number of time steps to integrate forward
+        Args:
+            dataset: Dataset containing snapshots
+            svd: Truncated SVD for regulairzation
+            idx: Index of initial snapshot
+            horizon: Number of time steps to integrate forward
 
-        Returns
-        -------
-        Numpy array with integrated data
+        Returns:
+            Numpy array with integrated data
         """
         left_bounds, _, right_bounds, _, _, param = dataset.get_data(True)
         data = []
@@ -286,20 +271,13 @@ class Model:
         """
         Integrate initial condition using the learned model.
 
-        Arguments
-        -------
-        initial_condition: numpy array of shape(N*n_vars)
-            Initial snapshot.
-        pars: list
-            Parameters of the system.
-        t_eval: numpy array
-            Time values at which to return solution.
+        Args:
+            initial_condition:  Initial snapshot.
+            pars: Parameters of the system.
+           t_eval: Time values at which to return solution.
 
-        Returns
-        -------
-        sol.t: numpy array
+        Returns:
             Time values at which the solution was evaluated
-        sol.y numpy array of shape(len(sol.t, n_vars, N))
             Solution obtained from numerical integration.
         """
         print('Integrating using learned PDE.')

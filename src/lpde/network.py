@@ -35,10 +35,9 @@ class Network(torch.nn.Module):
     """
     Pytorch PDE neural network.
 
-    Arguments
-    -------
-    config                    - Config with hyperparameters
-    n_vars                    - Number of system variables
+    Args:
+        config: Config with hyperparameters
+        n_vars: Number of system variables
     """
 
     def __init__(self, config: SectionProxy, n_vars: int):
@@ -87,14 +86,12 @@ class Network(torch.nn.Module):
         """
         Get finite difference coefficients.
 
-        Arguments
-        -------
-        min_deriv           - Order of minimal derivative
-        max_deriv           - Order of maximal derivative
+        Args:
+            min_deriv: Order of minimal derivative
+            max_deriv: Order of maximal derivative
 
-        Returns
-        -------
-        Tensor with finite difference coefficients
+        Returns:
+            Tensor with finite difference coefficients
         """
         assert max_deriv > min_deriv, 'Derivative range not specified'
         assert min_deriv >= 0, 'Derivatives should be larger zero'
@@ -122,15 +119,13 @@ class Network(torch.nn.Module):
         """
         Calculate derivativers of input snapshot.
 
-        Arguments
-        -------
-        input_tensor        - Tensor with input features
-        delta_x             - Tensor with spatial resolution
-        param               - Tensor with system parameters
+        Args:
+            input_tensor: Tensor with input features
+            delta_x: Tensor with spatial resolution
+            param: Tensor with system parameters
 
-        Returns
-        -------
-        Spatial derivative tensor
+        Returns:
+            Spatial derivative tensor
         """
         finite_diffs = torch.cat([
             torch.nn.functional.conv1d(
@@ -151,15 +146,13 @@ class Network(torch.nn.Module):
         """
         Forward pass through PDE neural network.
 
-        Arguments
-        -------
-        input_tensor        - Tensor with input features
-        delta_x             - Tensor with spatial resolution
-        param               - Tensor with system parameters
+        Args:
+            input_tensor: Tensor with input features
+            delta_x: Tensor with spatial resolution
+            param: Tensor with system parameters
 
-        Returns
-        -------
-        Output prediction tensor
+        Returns:
+            Output prediction tensor
         """
         # Calculate derivatives
         input_tensor = self.calc_derivs(input_tensor, delta_x)
