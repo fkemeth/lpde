@@ -86,8 +86,9 @@ class Network(torch.nn.Module):
         Returns:
             Tensor with finite difference coefficients
         """
-        assert max_deriv > min_deriv, 'Derivative range not specified'
-        assert min_deriv >= 0, 'Derivatives should be larger zero'
+        assert max_deriv > min_deriv, 'Max derivative should be larger than min derivative.'
+        assert min_deriv >= 0, 'Min derivative should be positive.'
+        assert max_deriv < self.kernel_size, 'Max derivative should not be larger than kernel size.'
 
         coeffs = np.zeros((max_deriv-min_deriv+1, 1, self.kernel_size))
         # Finite difference coefficients
