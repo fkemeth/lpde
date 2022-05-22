@@ -267,7 +267,7 @@ class Model:
         Args:
             initial_condition:  Initial snapshot.
             pars: Parameters of the system.
-           t_eval: Time values at which to return solution.
+            t_eval: Time values at which to return solution.
 
         Returns:
             Time values at which the solution was evaluated
