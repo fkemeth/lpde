@@ -69,7 +69,7 @@ This example can be run by using
 
 The training data thereby looks like the data shown in the figure below.
 
-![Training data](./example/cgle/training_data.png)
+![Training data](./example/cgle/fig/training_data.png)
 
 Using the hyperparameters defined in `config.cfg`, a neural network PDE is learned on the data shown in the figure above, by optimizing its weights using backprobagation and the PyTorch framework.
 
@@ -78,7 +78,7 @@ This is shown in the figure below, where on the left the actual test data is sho
 the predicted data is shown, obtained by integrating an initial snapshot at `t=0` forward in time
 using the learned PDE model.
 
-![Test data and predictions](./example/cgle/test_data_and_prediction.png)
+![Test data and predictions](./example/cgle/fig/test_data_and_prediction.png)
 
 
 See [this GitHub repository](https://github.com/fkemeth/emergent_pdes) for further example usages.
