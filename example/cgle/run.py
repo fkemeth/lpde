@@ -27,7 +27,7 @@ from dataset import Dataset
 import lpde
 
 
-def main(config: ConfigParser):
+def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
     """
     Train a partial differential equation on simulation data.
 
@@ -39,13 +39,24 @@ def main(config: ConfigParser):
     dataset_train = Dataset(config['SYSTEM'])
     dataset_test = Dataset(config['SYSTEM'])
 
+    # Visualize training data
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111)
+    pl1 = ax1.pcolor(dataset_train.x_data[::5, 0])
+    ax1.set_xlabel(r'$x_i$')
+    ax1.set_ylabel(r'$t_i$')
+    plt.colorbar(pl1, label=r'Re $W$')
+    plt.tight_layout()
+    plt.savefig('./fig/training_data.png')
+    plt.show()
+
     # Create Dataloader
     dataloader_train = torch.utils.data.DataLoader(
         dataset_train, batch_size=config['TRAINING'].getint('batch_size'), shuffle=True,
-        num_workers=config['TRAINING'].getint('num_workers'), pin_memory=True)
+        pin_memory=True)
     dataloader_test = torch.utils.data.DataLoader(
         dataset_test, batch_size=config['TRAINING'].getint('batch_size'), shuffle=False,
-        num_workers=config['TRAINING'].getint('num_workers'), pin_memory=True)
+        pin_memory=True)
 
     # Create the network architecture
     network = lpde.network.Network(
@@ -71,6 +82,7 @@ def main(config: ConfigParser):
         train_loss_list.append(train_loss)
         val_loss_list.append(val_loss)
 
+    # Make predictions
     t_eval = np.linspace(0,
                          config['SYSTEM'].getfloat(
                              'tmax')-config['SYSTEM'].getfloat('tmin'),
@@ -80,11 +92,22 @@ def main(config: ConfigParser):
                                      [delta_x.detach().numpy()],
                                      t_eval=t_eval)
 
-    fig = plt.figure()
+    # Visualize training data
+    fig = plt.figure(figsize=(8, 4.8))
     ax1 = fig.add_subplot(121)
-    ax1.pcolor(dataset_test.x_data[:, 0])
+    pl1 = ax1.pcolor(dataset_test.x_data[::5, 0])
+    ax1.set_xlabel(r'$x_i$')
+    ax1.set_ylabel(r'$t_i$')
+    ax1.set_title('test data')
+    plt.colorbar(pl1, label=r'Re $W$')
     ax2 = fig.add_subplot(122)
-    ax2.pcolor(predictions[:, 0])
+    pl2 = ax2.pcolor(predictions[::5, 0])
+    ax2.set_xlabel(r'$x_i$')
+    ax2.set_ylabel(r'$t_i$')
+    ax2.set_title('prediction')
+    plt.colorbar(pl2, label=r'prediction Re $W$')
+    plt.tight_layout()
+    plt.savefig('./fig/test_data_and_prediction.png')
     plt.show()
 
 
