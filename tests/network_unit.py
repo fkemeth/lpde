@@ -18,7 +18,6 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 """
 
 import configparser
-import unittest
 
 import findiff
 import torch
@@ -44,71 +43,53 @@ def get_default_model_config() -> configparser.ConfigParser:
     return config
 
 
-class NetworkModule(unittest.TestCase):
+def test_coefficients():
     """
-    Test network module.
+    Test finite difference coefficients.
     """
+    config = get_default_model_config()
 
-    def test_coefficients(self):
-        """
-        Test finite difference coefficients.
-        """
-        config = get_default_model_config()
+    for kernel_size in ['3', '5', '9']:
+        for n_var in [1, 2, 3, 4]:
+            for n_derivs in [str(x) for x in range(1, int(kernel_size))]:
+                config['MODEL']['kernel_size'] = kernel_size
+                config['MODEL']['n_derivs'] = n_derivs
+                net = network.Network(config['MODEL'], n_var)
 
-        for kernel_size in ['3', '5', '9']:
-            for n_var in [1, 2, 3, 4]:
-                for n_derivs in [str(x) for x in range(1, int(kernel_size))]:
-                    config['MODEL']['kernel_size'] = kernel_size
-                    config['MODEL']['n_derivs'] = n_derivs
-                    net = network.Network(config['MODEL'], n_var)
+                print(net.coeffs.shape)
 
-                    print(net.coeffs.shape)
+                assert net.coeffs.shape == (int(n_derivs)+1, 1, int(kernel_size)), \
+                    'Coefficients should be of shape (n_derivs+1, n_var, kernel_size).'
+                assert net.get_coeffs(min_deriv=0, max_deriv=int(n_derivs)).shape == \
+                    (int(n_derivs)+1, 1, int(kernel_size)), \
+                    'Coefficients should be of shape (n_derivs+1, n_var, kernel_size).'
 
-                    self.assertEqual(
-                        net.coeffs.shape, (int(n_derivs)+1,
-                                           1, int(kernel_size)),
-                        'Coefficients should be of shape (n_derivs+1, n_var, kernel_size).')
-                    self.assertEqual(
-                        net.get_coeffs(
-                            min_deriv=0, max_deriv=int(n_derivs)).shape,
-                        (int(n_derivs)+1, 1, int(kernel_size)),
-                        'Coefficients should be of shape (n_derivs+1, n_var, kernel_size).')
+                zero_deriv = torch.zeros(int(kernel_size)).to(net.device)
+                zero_deriv[int((int(kernel_size)-1)/2)] = 1
 
-                    zero_deriv = torch.zeros(int(kernel_size)).to(net.device)
-                    zero_deriv[int((int(kernel_size)-1)/2)] = 1
+                assert torch.equal(net.coeffs[0, 0], zero_deriv), \
+                    'Zeroth order derivative is wrong.'
 
-                    self.assertTrue(
-                        torch.equal(net.coeffs[0, 0], zero_deriv),
-                        'Zeroth order derivative is wrong.')
+                if int(kernel_size) == 3 and int(n_derivs) > 1:
+                    first_deriv = torch.tensor([-0.5, 0, 0.5],
+                                               dtype=torch.get_default_dtype()).to(net.device)
+                    assert torch.equal(net.coeffs[1, 0], first_deriv), \
+                        'First order derivative is wrong.'
+                    second_deriv = torch.tensor([1, -2, 1],
+                                                dtype=torch.get_default_dtype()).to(net.device)
+                    assert torch.equal(net.coeffs[2, 0], second_deriv), \
+                        'Second derivative is wrong.'
 
-                    if int(kernel_size) == 3 and int(n_derivs) > 1:
-                        first_deriv = torch.tensor([-0.5, 0, 0.5],
-                                                   dtype=torch.get_default_dtype()).to(net.device)
-                        self.assertTrue(
-                            torch.equal(net.coeffs[1, 0], first_deriv),
-                            'First order derivative is wrong.')
-                        second_deriv = torch.tensor([1, -2, 1],
-                                                    dtype=torch.get_default_dtype()).to(net.device)
-                        self.assertTrue(
-                            torch.equal(net.coeffs[2, 0], second_deriv),
-                            'Second derivative is wrong.')
+                for deriv_order in range(1, int(n_derivs)):
+                    acc_order = 0
+                    fd_coeff = []
+                    while len(fd_coeff) < int(kernel_size):
+                        acc_order += 2
+                        fd_coeff = findiff.coefficients(deriv_order,
+                                                        acc_order)['center']['coefficients']
 
-                    for deriv_order in range(1, int(n_derivs)):
-                        acc_order = 0
-                        fd_coeff = []
-                        while len(fd_coeff) < int(kernel_size):
-                            acc_order += 2
-                            fd_coeff = findiff.coefficients(deriv_order,
-                                                            acc_order)['center']['coefficients']
+                    ith_deriv = torch.tensor(fd_coeff,
+                                             dtype=torch.get_default_dtype()).to(net.device)
 
-                        ith_deriv = torch.tensor(fd_coeff,
-                                                 dtype=torch.get_default_dtype()).to(net.device)
-
-                        self.assertTrue(
-                            torch.equal(
-                                net.coeffs[int(deriv_order), 0], ith_deriv),
-                            str(deriv_order)+' order derivative is wrong.')
-
-
-if __name__ == '__main__':
-    unittest.main()
+                    assert torch.equal(net.coeffs[int(deriv_order), 0], ith_deriv), \
+                        str(deriv_order)+' order derivative is wrong.'
