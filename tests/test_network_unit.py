@@ -34,7 +34,7 @@ def get_default_model_config() -> configparser.ConfigParser:
     """
     config = configparser.ConfigParser()
     config['MODEL'] = {'kernel_size': '5',
-                       'device': 'cuda',
+                       'device': 'cuda' if torch.cuda.is_available() else 'cpu',
                        'use_param': 'False',
                        'num_params': '2',
                        'n_filters': '16',
