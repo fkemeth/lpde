@@ -1,5 +1,7 @@
 # Learning Partial Differential Equations
 
+[![GitHub version](https://badge.fury.io/gh/fkemeth%2Flpde.svg)](https://badge.fury.io/gh/fkemeth%2Flpde)
+
 INSTALLATION
 ---------
 
