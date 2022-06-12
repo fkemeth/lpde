@@ -125,7 +125,7 @@ class Model:
             self.optimizer.step()
 
             # measure accuracy on batch
-            sum_loss += loss
+            sum_loss += loss.detach().cpu().numpy()
             cnt += 1
 
         return sum_loss / cnt
@@ -157,7 +157,8 @@ class Model:
                 output = self.net(data, *batch)
 
                 # loss / accuracy
-                sum_loss += self.criterion(output, target)
+                sum_loss += self.criterion(
+                    output, target).detach().cpu().numpy()
                 cnt += 1
 
         # Learning Rate reduction
