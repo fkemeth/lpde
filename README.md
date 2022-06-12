@@ -1,6 +1,6 @@
 # Learning Partial Differential Equations
 
-[![Python](https://img.shields.io/badge/Python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue)](https://badge.fury.io/py/lpde)
+[![Python](https://img.shields.io/badge/Python-3.7%20%7C%203.8%20%7C%203.9%20%7C%203.10-blue)](https://badge.fury.io/py/lpde)
 [![PyPI version](https://badge.fury.io/py/lpde.svg)](https://badge.fury.io/py/lpde)
 ![PyPI - License](https://img.shields.io/pypi/l/lpde)
 [![Python package](https://github.com/fkemeth/lpde/actions/workflows/python-package.yml/badge.svg)](https://github.com/fkemeth/lpde/actions/workflows/python-package.yml)
