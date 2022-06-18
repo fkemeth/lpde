@@ -27,7 +27,7 @@ import tqdm
 
 import lpde
 
-from example.cgle.dataset import CGLEDataset
+from dataset import CGLEDataset
 
 
 def test_cgle_example():
