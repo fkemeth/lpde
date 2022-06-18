@@ -16,64 +16,130 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
+from typing import Any
+
 import numpy as np
-from cgle_utils import integrate
+from scipy.fftpack import diff as psdiff
+from scipy.integrate import solve_ivp
 
 from lpde.dataset import Dataset
+from lpde.utils import get_dudt_and_reshape_data
 
-
-def get_dudt(x_data: np.ndarray,
-             delta_t: float,
-             fd_dt_acc: int) -> np.ndarray:
+def to_real(values: np.ndarray) -> np.ndarray:
     """
-    Calculate du/dt.
+    Convert complex array to real array.
 
     Args:
-        x_data: Array with snapshot data
-        delta_t: Float with dt between snapshots
-        fd_dt_acc: Int specifying finite difference order
+        values: numpy array containing complex values
+
+    Returns:
+        Real array with shape 2*len(values)
+    """
+    return [*values.real, *values.imag]
+
+
+def to_complex(values: np.ndarray) -> np.ndarray:
+    """
+    Convert complex array to real array.
+
+    Args:
+        values: numpy array containing real values
+
+    Returns:
+        Complex array with shape len(values)/2
+    """
+    return values[:int(len(values)/2)] + 1.0j*values[int(len(values)/2):]
+
+
+def dudt(time: float,  # pylint: disable=unused-argument
+         values: np.ndarray,
+         length: float,
+         c_1: float,
+         c_2: float) -> np.ndarray:
+    """
+    Time derivative of the complex Ginzburg-Landau equation.
+
+    Args:
+        t: time step
+        y: numpy array containing variables
+        length: length of spatial domain
+        c_1: parameter c1
+        c_2: parameter c2
 
     Returns:
         Array with du/dt data
     """
-    # Approximate du/dt using finite differences
-    if fd_dt_acc == 2:
-        # accuracy 2
-        y_data = (x_data[2:]-x_data[:-2])/(2*delta_t)
-    elif fd_dt_acc == 4:
-        # accuracy 4
-        y_data = (x_data[:-4]-8*x_data[1:-3]+8 *
-                  x_data[3:-1]-x_data[4:])/(12*delta_t)
-    else:
-        raise ValueError(
-            'Finite difference in time accuracy must be 2 or 4.')
-    return y_data
+    values = to_complex(values)
+    dydxx = psdiff(values.real, period=length, order=2) + \
+        1.0j*psdiff(values.imag, period=length, order=2)
+    dydt = values - (1+1.0j*c_2)*np.abs(values)**2*values + (1+1.0j*c_1)*dydxx
+    return to_real(dydt)
 
 
-def get_dudt_and_reshape_data(x_data: np.ndarray,
-                              delta_x: np.ndarray,
-                              delta_t: float,
-                              fd_dt_acc: int):
+def create_initial_conditions(n_grid_points: int) -> np.ndarray:
     """
-    Calculate du/dt and reshape data.
+    Specify initial conditions.
 
     Args:
-        x_data: Array with snapshot data
-        delta_x: Array with delta_x data
-        delta_t: Float with dt between snapshots
-        fd_dt_acc: Int specifying finite difference order
+        n_grid_points: number of spatial grid points
 
     Returns:
-        Array with snapshot data
-        Array with delta_x data
-        Array with du/dt data
+        Array with initial values
     """
-    # Approximate du/dt using finite differences
-    y_data = get_dudt(x_data, delta_t, fd_dt_acc)
+    return 0.5 * np.random.randn(int(2*n_grid_points))
 
-    x_data = x_data[int(fd_dt_acc/2):-int(fd_dt_acc/2)]
-    delta_x = delta_x[int(fd_dt_acc/2):-int(fd_dt_acc/2)]
-    return x_data, delta_x, y_data
+
+def integrate(n_grid_points: int = 256,
+              n_time_steps: int = 200,
+              t_min: float = 1000.0,
+              t_max: float = 1200.0,
+              pars: Any = None):
+    """
+    Integrate complex Ginzburg-Landau equation.
+
+    Args:
+        n_grid_points: number of spatial grid points
+        n_time_steps: number of time steps to sample data from
+        t_min: start of time window
+        t_max: end of time window
+        pars: list of system parameters containing:
+            length: length of spatial domain
+            c_1: parameter c1
+            c_2: parameter c2
+
+    """
+    # Default parameters if none are passed
+    pars = [80, 0.0, -3.0] if pars is None else pars
+    length, c_1, c_2 = pars
+
+    # Write the parameters into a dictionary for future use.
+    data_dict = {}
+    data_dict['c_1'] = c_1
+    data_dict['c_2'] = c_2
+    data_dict['length'] = length
+    data_dict['n_grid_points'] = n_grid_points
+    data_dict['t_min'] = t_min
+    data_dict['t_max'] = t_max
+    data_dict['n_time_steps'] = n_time_steps
+
+    # Set initial_conditions.
+    initial_condition = create_initial_conditions(n_grid_points)
+    data_dict['initial_condition'] = initial_condition
+
+    # Set time vector.
+    t_eval = np.linspace(t_min, t_max, n_time_steps+1, endpoint=True)
+
+    # Compute solution.
+    print('Computing the solution.')
+    sol = solve_ivp(dudt,
+                    [0, t_eval[-1]],
+                    initial_condition,
+                    t_eval=t_eval,
+                    args=(length, c_1, c_2))
+    data_dict['data'] = sol.y.T
+    data_dict['data'] = data_dict['data'][:, :n_grid_points] + \
+        1.0j*data_dict['data'][:, n_grid_points:]
+    return data_dict
 
 
 class CGLEDataset(Dataset):
