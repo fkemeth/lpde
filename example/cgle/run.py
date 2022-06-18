@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import tqdm
-from dataset import Dataset
+from dataset import CGLEDataset
 
 import lpde
 
@@ -36,8 +36,8 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
     """
 
     # Create Dataset
-    dataset_train = Dataset(config['SYSTEM'])
-    dataset_test = Dataset(config['SYSTEM'])
+    dataset_train = CGLEDataset(config['SYSTEM'])
+    dataset_test = CGLEDataset(config['SYSTEM'])
 
     # Visualize training data
     fig = plt.figure()

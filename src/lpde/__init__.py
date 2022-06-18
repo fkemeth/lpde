@@ -17,4 +17,5 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 
-from lpde import model, network, utils  # noqa # pylint: disable=unused-import
+from lpde import (dataset, model,  # noqa # pylint: disable=unused-import
+                  network, utils)

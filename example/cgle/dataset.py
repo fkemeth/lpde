@@ -16,26 +16,73 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FO
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-from configparser import SectionProxy
-
 import numpy as np
-import torch
 from cgle_utils import integrate
 
+from lpde.dataset import Dataset
 
-class Dataset(torch.utils.data.Dataset):
+
+def get_dudt(x_data: np.ndarray,
+             delta_t: float,
+             fd_dt_acc: int) -> np.ndarray:
     """
-    Partial differential equation dataset.
+    Calculate du/dt.
+
+    Args:
+        x_data: Array with snapshot data
+        delta_t: Float with dt between snapshots
+        fd_dt_acc: Int specifying finite difference order
+
+    Returns:
+        Array with du/dt data
+    """
+    # Approximate du/dt using finite differences
+    if fd_dt_acc == 2:
+        # accuracy 2
+        y_data = (x_data[2:]-x_data[:-2])/(2*delta_t)
+    elif fd_dt_acc == 4:
+        # accuracy 4
+        y_data = (x_data[:-4]-8*x_data[1:-3]+8 *
+                  x_data[3:-1]-x_data[4:])/(12*delta_t)
+    else:
+        raise ValueError(
+            'Finite difference in time accuracy must be 2 or 4.')
+    return y_data
+
+
+def get_dudt_and_reshape_data(x_data: np.ndarray,
+                              delta_x: np.ndarray,
+                              delta_t: float,
+                              fd_dt_acc: int):
+    """
+    Calculate du/dt and reshape data.
+
+    Args:
+        x_data: Array with snapshot data
+        delta_x: Array with delta_x data
+        delta_t: Float with dt between snapshots
+        fd_dt_acc: Int specifying finite difference order
+
+    Returns:
+        Array with snapshot data
+        Array with delta_x data
+        Array with du/dt data
+    """
+    # Approximate du/dt using finite differences
+    y_data = get_dudt(x_data, delta_t, fd_dt_acc)
+
+    x_data = x_data[int(fd_dt_acc/2):-int(fd_dt_acc/2)]
+    delta_x = delta_x[int(fd_dt_acc/2):-int(fd_dt_acc/2)]
+    return x_data, delta_x, y_data
+
+
+class CGLEDataset(Dataset):
+    """
+    CGLE dataset.
 
     Args:
         config: configfile with dataset parameters
     """
-
-    def __init__(self, config: SectionProxy) -> None:
-        self.config = config
-        self.x_data, self.delta_x, self.y_data = self.create_data()
-
-        self.boundary_conditions = 'periodic'
 
     def create_data(self) -> list:
         """
@@ -43,8 +90,8 @@ class Dataset(torch.utils.data.Dataset):
 
         Returns:
             Array with snapshot data
-            Array with du/dt data
             Array with delta_x data
+            Array with du/dt data
         """
         # Integrate pde
         data_dict = integrate(n_grid_points=self.config.getint('n_grid_points'),
@@ -62,51 +109,15 @@ class Dataset(torch.utils.data.Dataset):
         delta_t = (self.config.getfloat('tmax')-self.config.getfloat('tmin')) / \
             self.config.getint('n_time_steps')
 
-        # Approximate du/dt using finite differences
-        if self.config.getint('fd_dt_acc') == 2:
-            # accuracy 2
-            y_data = (data[2:]-data[:-2])/(2*delta_t)
-            x_data = data[1:-1]
-            delta_x = np.repeat(
-                data_dict['length']/data_dict['n_grid_points'], len(data)-2)
-        elif self.config.getint('fd_dt_acc') == 4:
-            # accuracy 4
-            y_data = (data[:-4]-8*data[1:-3]+8 *
-                      data[3:-1]-data[4:])/(12*delta_t)
-            x_data = data[2:-2]
-            delta_x = np.repeat(
-                data_dict['length']/data_dict['n_grid_points'], len(data)-4)
-        else:
-            raise ValueError(
-                'Finite difference in time accuracy must be 2 or 4.')
+        delta_x = np.repeat(data_dict['length'] /
+                            data_dict['n_grid_points'], len(data))
+
+        x_data, delta_x, y_data = get_dudt_and_reshape_data(data,
+                                                            delta_x,
+                                                            delta_t,
+                                                            self.config.getint('fd_dt_acc'))
 
         # Introduce variable dimension if it does not exist yet
         if len(x_data.shape) == 2:
             return x_data[:, np.newaxis], delta_x, y_data[:, np.newaxis]
         return np.transpose(x_data, (0, 2, 1)), delta_x, np.transpose(y_data, (0, 2, 1))
-
-    def __len__(self) -> int:
-        """
-        Get length of dataset.
-
-        Returns:
-            Length of dataset.
-        """
-        return len(self.x_data)
-
-    def __getitem__(self, index: int) -> tuple:
-        """
-        Get datapoint.
-
-        Args:
-            index: index of datapoint
-
-        Returns:
-            Tuple of input snapshot, delta_x and dudt.
-        """
-
-        _x = torch.tensor(self.x_data[index], dtype=torch.get_default_dtype())
-        _dx = torch.tensor(self.delta_x[index],
-                           dtype=torch.get_default_dtype())
-        _y = torch.tensor(self.y_data[index], dtype=torch.get_default_dtype())
-        return (_x, _dx, _y)
