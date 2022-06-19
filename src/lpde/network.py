@@ -313,7 +313,7 @@ class Network2D(_BaseNetwork):
             Output prediction tensor
         """
         # Calculate derivatives
-        delta_x, delta_y = torch.split(delta_xy, 2, 2)
+        delta_x, delta_y = torch.split(delta_xy, 1, 1)
         input_tensor = self.calc_derivs(input_tensor, delta_x, delta_y)
         if self.use_param:
             param = param.unsqueeze(-1).repeat(1, 1,
