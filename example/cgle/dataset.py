@@ -134,10 +134,14 @@ class CGLEDataset(Dataset):
             Array with du/dt data
         """
         # Integrate pde
+        pars = [self.config.getfloat('length'),
+                self.config.getfloat('c_1'),
+                self.config.getfloat('c_2')]
         data_dict = integrate(n_grid_points=self.config.getint('n_grid_points'),
                               n_time_steps=self.config.getint('n_time_steps'),
                               t_min=self.config.getfloat('tmin'),
-                              t_max=self.config.getfloat('tmax'))
+                              t_max=self.config.getfloat('tmax'),
+                              pars=pars)
 
         # If data type is complex, transform to real data
         if data_dict['data'].dtype == 'complex':

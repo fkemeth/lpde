@@ -206,10 +206,10 @@ class Network2D(_BaseNetwork):
         """
         layers = []
         if self.use_param:
-            num_features = int(self.n_vars*(self.n_derivs+1) +
+            num_features = int(2*self.n_vars*(self.n_derivs+1) +
                                int(config.getint('num_params')))
         else:
-            num_features = int(self.n_vars*(self.n_derivs+1))
+            num_features = int(2*self.n_vars*(self.n_derivs+1))
 
         n_channels = config.getint('n_filters')
 
@@ -285,9 +285,9 @@ class Network2D(_BaseNetwork):
                 input_tensor[:, i].unsqueeze(1),
                 self.coeffs) for i in range(input_tensor.shape[1])
         ], dim=1)
-        x_scales = torch.cat([torch.pow(delta_x.unsqueeze(1), i)
+        x_scales = torch.cat([torch.pow(delta_x, i)
                               for i in range(int(self.coeffs.shape[0]/2))], axis=-1)
-        y_scales = torch.cat([torch.pow(delta_y.unsqueeze(1), i)
+        y_scales = torch.cat([torch.pow(delta_y, i)
                               for i in range(int(self.coeffs.shape[0]/2))], axis=-1)
         x_scales = torch.cat(
             (x_scales, x_scales), axis=1).unsqueeze(2).unsqueeze(2).repeat(

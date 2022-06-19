@@ -35,7 +35,7 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
        config: config with hyperparameters
     """
     # Use cuda only if available
-    config["MODEL"]["device"] = 'cuda' if torch.cuda.is_available() else 'cpu'
+    config['MODEL']['device'] = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Create Dataset
     dataset_train = CGLEDataset(config['SYSTEM'])
@@ -44,9 +44,9 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
     # Visualize training data
     fig = plt.figure()
     ax1 = fig.add_subplot(111)
-    pl1 = ax1.pcolor(dataset_train.x_data[::5, 0], cmap='plasma')
+    pl1 = ax1.pcolor(dataset_train.x_data[-1, 0], cmap='plasma')
     ax1.set_xlabel(r'$x_i$')
-    ax1.set_ylabel(r'$t_i$')
+    ax1.set_ylabel(r'$y_i$')
     plt.colorbar(pl1, label=r'Re $W$')
     plt.tight_layout()
     plt.savefig('./fig/training_data.png')
@@ -60,8 +60,10 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
         dataset_test, batch_size=config['TRAINING'].getint('batch_size'), shuffle=False,
         pin_memory=True)
 
+    print(dataset_test.delta_x.shape)
+
     # Create the network architecture
-    network = lpde.network.Network(
+    network = lpde.network.Network2D(
         config['MODEL'], n_vars=dataset_train.x_data.shape[1])
 
     # Create a model wrapper around the network architecture
@@ -97,15 +99,15 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
     # Visualize training data
     fig = plt.figure(figsize=(8, 3.6))
     ax1 = fig.add_subplot(121)
-    pl1 = ax1.pcolor(dataset_test.x_data[::5, 0], cmap='plasma')
+    pl1 = ax1.pcolor(dataset_test.x_data[-1, 0], cmap='plasma')
     ax1.set_xlabel(r'$x_i$')
-    ax1.set_ylabel(r'$t_i$')
+    ax1.set_ylabel(r'$y_i$')
     ax1.set_title('test data')
     plt.colorbar(pl1, label=r'Re $W$')
     ax2 = fig.add_subplot(122)
-    pl2 = ax2.pcolor(predictions[::5, 0], cmap='plasma')
+    pl2 = ax2.pcolor(predictions[-1, 0], cmap='plasma')
     ax2.set_xlabel(r'$x_i$')
-    ax2.set_ylabel(r'$t_i$')
+    ax2.set_ylabel(r'$y_i$')
     ax2.set_title('prediction')
     plt.colorbar(pl2, label=r'prediction Re $W$')
     plt.tight_layout()

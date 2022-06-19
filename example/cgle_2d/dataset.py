@@ -19,10 +19,8 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN 
 from typing import Any
 
 import numpy as np
-from scipy.fftpack import diff as psdiff
-from scipy.integrate import solve_ivp
-
 from findiff import FinDiff
+from scipy.integrate import solve_ivp
 
 from lpde.dataset import Dataset
 from lpde.utils import get_dudt_and_reshape_data
@@ -68,7 +66,8 @@ def dudt(time: float,  # pylint: disable=unused-argument
     values = np.reshape(values, (num_grid_points, num_grid_points))
 
     dydxx = FinDiff(0, delta_x, 2)(values.real) + 1.0j*FinDiff(0, delta_x, 2)(values.imag) + \
-        FinDiff(1, delta_x, 2)(values.real) + 1.0j*FinDiff(1, delta_x, 2)(values.imag)
+        FinDiff(1, delta_x, 2)(values.real) + 1.0j * \
+        FinDiff(1, delta_x, 2)(values.imag)
     dydt = values - (1+1.0j*c_2)*np.abs(values)**2*values + (1+1.0j*c_1)*dydxx
     return ensure_boundary_conditions(dydt).flatten()
 
@@ -136,7 +135,7 @@ def integrate(n_grid_points: int = 80,
                     t_eval=t_eval,
                     args=(length, c_1, c_2))
     data_dict['data'] = sol.y.T
-    data_dict['data'] = data_dict['data'].reshape((data_dict["data"].shape[0],
+    data_dict['data'] = data_dict['data'].reshape((data_dict['data'].shape[0],
                                                    n_grid_points,
                                                    n_grid_points))
     return data_dict
@@ -160,10 +159,14 @@ class CGLEDataset(Dataset):
             Array with du/dt data
         """
         # Integrate pde
+        pars = [self.config.getfloat('length'),
+                self.config.getfloat('c_1'),
+                self.config.getfloat('c_2')]
         data_dict = integrate(n_grid_points=self.config.getint('n_grid_points'),
                               n_time_steps=self.config.getint('n_time_steps'),
                               t_min=self.config.getfloat('tmin'),
-                              t_max=self.config.getfloat('tmax'))
+                              t_max=self.config.getfloat('tmax'),
+                              pars=pars)
 
         # If data type is complex, transform to real data
         if data_dict['data'].dtype == 'complex':
@@ -189,4 +192,4 @@ class CGLEDataset(Dataset):
         # Introduce variable dimension if it does not exist yet
         if len(x_data.shape) == 2:
             return x_data[:, np.newaxis], delta_x, y_data[:, np.newaxis]
-        return np.transpose(x_data, (0, 2, 1)), delta_xy, np.transpose(y_data, (0, 2, 1))
+        return np.transpose(x_data, (0, 3, 1, 2)), delta_xy, np.transpose(y_data, (0, 3, 1, 2))

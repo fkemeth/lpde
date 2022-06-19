@@ -84,25 +84,36 @@ class Model:
             Padded tensor containing the X data.
             Padded tensor containing the Y data.
         """
+        # Periodic
         if self.boundary_conditions == 'periodic':
-            if len(data.shape)==3:
+            if len(data.shape) == 3:
                 data = torch.nn.functional.pad(
                     data, (self.net.get_off_set(), self.net.get_off_set()), mode='circular')
-            elif len(data.shape)==4:
+            elif len(data.shape) == 4:
                 data = torch.nn.functional.pad(
                     data, (self.net.get_off_set(), self.net.get_off_set(),
                            self.net.get_off_set(), self.net.get_off_set()), mode='circular')
             return data, target
+
+        # No-flux
         if self.boundary_conditions == 'no-flux':
-            if len(data.shape)==3:
+            if len(data.shape) == 3:
                 data = torch.nn.functional.pad(
                     data, (self.net.get_off_set(), self.net.get_off_set()), mode='reflect')
-            elif len(data.shape)==4:
+            elif len(data.shape) == 4:
                 data = torch.nn.functional.pad(
                     data, (self.net.get_off_set(), self.net.get_off_set(),
                            self.net.get_off_set(), self.net.get_off_set()), mode='reflect')
             return data, target
-        return data, target[:, :, self.net.get_off_set():-self.net.get_off_set()]
+
+        # None
+        if len(data.shape) == 3:
+            target = target[:, :, self.net.get_off_set():-
+                            self.net.get_off_set()]
+        if len(data.shape) == 4:
+            target = target[:, :, self.net.get_off_set():-self.net.get_off_set(),
+                            self.net.get_off_set():-self.net.get_off_set()]
+        return data, target
 
     def train(self) -> float:
         """
