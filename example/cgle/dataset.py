@@ -36,7 +36,7 @@ def dudt(time: float,  # pylint: disable=unused-argument
 
     Args:
         t: time step
-        y: numpy array containing variables
+        values: numpy array containing variables
         length: length of spatial domain
         c_1: parameter c1
         c_2: parameter c2
