@@ -34,6 +34,8 @@ class Dataset(torch.utils.data.Dataset):
         self.x_data, self.delta_x, self.y_data = self.create_data()
 
         self.boundary_conditions = config['boundary_conditions']
+        self.spatial_dimensions = self.x_data.shape[2:]
+        self.num_spatial_dimensions = len(self.spatial_dimensions)
 
     def create_data(self) -> list:
         """
