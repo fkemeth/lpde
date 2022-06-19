@@ -60,8 +60,6 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
         dataset_test, batch_size=config['TRAINING'].getint('batch_size'), shuffle=False,
         pin_memory=True)
 
-    print(dataset_test.delta_x.shape)
-
     # Create the network architecture
     network = lpde.network.Network2D(
         config['MODEL'], n_vars=dataset_train.x_data.shape[1])
