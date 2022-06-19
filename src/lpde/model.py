@@ -213,7 +213,7 @@ class Model:
              time: float,  # pylint: disable=unused-argument
              input_array: np.ndarray,
              delta_x: np.ndarray,
-             num_spatial_dimensions: int = 1) -> np.ndarray:
+             spatial_dimensions: list) -> np.ndarray:
         """
         Return du/dt of the model.
 
@@ -226,17 +226,7 @@ class Model:
         Returns:
             Time derative at each point of input snapshot.
         """
-        input_array = input_array.reshape(self.net.n_vars, -1)
-        if num_spatial_dimensions == 1:
-            pass
-        elif num_spatial_dimensions == 2:
-            input_array = input_array.reshape(self.net.n_vars,
-                                              int(np.sqrt(
-                                                  input_array.shape[-1])),
-                                              int(np.sqrt(input_array.shape[-1])))
-        else:
-            raise NotImplementedError(
-                'More than two spatial dimensions not implemented so far.')
+        input_array = input_array.reshape(self.net.n_vars, *spatial_dimensions)
 
         input_array = torch.tensor(
             input_array, dtype=torch.get_default_dtype()).unsqueeze(0).to(self.net.device)
@@ -310,16 +300,13 @@ class Model:
             Solution obtained from numerical integration.
         """
         print('Integrating using learned PDE.')
-        num_spatial_dimensions = len(initial_condition.shape)-1
-        pars.append(num_spatial_dimensions)
+        spatial_dimensions = initial_condition.shape
+        pars.append(spatial_dimensions)
         sol = solve_ivp(self.dfdt, [0, t_eval[-1]], initial_condition.flatten(),
                         t_eval=t_eval, args=pars, method='RK45')
         if sol.status == -1:
             raise ValueError('Integration failed.')
         sol.y = sol.y.T
-        sol.y = np.reshape(sol.y, (len(t_eval), self.net.n_vars, -1))
-        if num_spatial_dimensions == 2:
-            sol.y = np.reshape(sol.y, (len(t_eval), self.net.n_vars,
-                                       int(np.sqrt(sol.y.shape[-1])),
-                                       int(np.sqrt(sol.y.shape[-1]))))
+        sol.y = np.reshape(
+            sol.y, (len(t_eval), self.net.n_vars, *spatial_dimensions))
         return sol.t, sol.y
