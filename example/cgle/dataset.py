@@ -25,31 +25,6 @@ from scipy.integrate import solve_ivp
 from lpde.dataset import Dataset
 from lpde.utils import get_dudt_and_reshape_data
 
-def to_real(values: np.ndarray) -> np.ndarray:
-    """
-    Convert complex array to real array.
-
-    Args:
-        values: numpy array containing complex values
-
-    Returns:
-        Real array with shape 2*len(values)
-    """
-    return [*values.real, *values.imag]
-
-
-def to_complex(values: np.ndarray) -> np.ndarray:
-    """
-    Convert complex array to real array.
-
-    Args:
-        values: numpy array containing real values
-
-    Returns:
-        Complex array with shape len(values)/2
-    """
-    return values[:int(len(values)/2)] + 1.0j*values[int(len(values)/2):]
-
 
 def dudt(time: float,  # pylint: disable=unused-argument
          values: np.ndarray,
@@ -69,11 +44,9 @@ def dudt(time: float,  # pylint: disable=unused-argument
     Returns:
         Array with du/dt data
     """
-    values = to_complex(values)
     dydxx = psdiff(values.real, period=length, order=2) + \
         1.0j*psdiff(values.imag, period=length, order=2)
-    dydt = values - (1+1.0j*c_2)*np.abs(values)**2*values + (1+1.0j*c_1)*dydxx
-    return to_real(dydt)
+    return values - (1+1.0j*c_2)*np.abs(values)**2*values + (1+1.0j*c_1)*dydxx
 
 
 def create_initial_conditions(n_grid_points: int) -> np.ndarray:
@@ -86,7 +59,8 @@ def create_initial_conditions(n_grid_points: int) -> np.ndarray:
     Returns:
         Array with initial values
     """
-    return 0.5 * np.random.randn(int(2*n_grid_points))
+    return 0.5 * np.random.randn(int(2*n_grid_points)) + \
+        0.5j * np.random.randn(int(2*n_grid_points))
 
 
 def integrate(n_grid_points: int = 256,

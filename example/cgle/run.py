@@ -34,6 +34,8 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
     Args:
        config: config with hyperparameters
     """
+    # Use cuda only if available
+    config["MODEL"]["device"] = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Create Dataset
     dataset_train = CGLEDataset(config['SYSTEM'])
