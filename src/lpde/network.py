@@ -32,6 +32,7 @@ class _BaseNetwork(torch.nn.Module):
         config: Config with hyperparameters
         n_vars: Number of system variables
     """
+
     def __init__(self, config: SectionProxy, n_vars: int):
         super().__init__()
         self.kernel_size = config.getint('kernel_size')
@@ -47,7 +48,6 @@ class _BaseNetwork(torch.nn.Module):
         self.trainable_parameters = sum(p.numel()
                                         for p in self.network.parameters() if p.requires_grad)
 
-
     def get_off_set(self) -> int:
         """
         Get width of boundaries.
@@ -56,19 +56,6 @@ class _BaseNetwork(torch.nn.Module):
             Width of boundary
         """
         return int((self.kernel_size-1)/2)
-
-
-class Network(Network1D):
-    """
-    Pytorch 1-D PDE neural network.
-
-    Args:
-        config: Config with hyperparameters
-        n_vars: Number of system variables
-    """
-    def __init__(self, config: SectionProxy, n_vars: int):
-        super().__init__(config, n_vars)
-
 
 
 class Network1D(_BaseNetwork):
@@ -82,7 +69,6 @@ class Network1D(_BaseNetwork):
 
     def __init__(self, config: SectionProxy, n_vars: int):
         super().__init__(config, n_vars)
-
 
     def get_network(self, config: SectionProxy) -> torch.nn.Module:
         """
@@ -108,7 +94,6 @@ class Network1D(_BaseNetwork):
             num_features, self.n_vars, (1), stride=1, padding=0, bias=True))
 
         return torch.nn.Sequential(*layers)
-
 
     def get_coeffs(self, min_deriv: int = 0, max_deriv: int = 5) -> torch.Tensor:
         """
@@ -168,7 +153,6 @@ class Network1D(_BaseNetwork):
             1, 1, finite_diffs.shape[-1]).to(self.device)
         return finite_diffs/scales
 
-
     def forward(self,
                 input_tensor: torch.Tensor,
                 delta_x: torch.Tensor,
@@ -194,9 +178,9 @@ class Network1D(_BaseNetwork):
         return input_tensor
 
 
-class Network2D(_BaseNetwork):
+class Network(Network1D):
     """
-    Pytorch 2-D PDE neural network.
+    Pytorch 1-D PDE neural network.
 
     Args:
         config: Config with hyperparameters
@@ -206,6 +190,15 @@ class Network2D(_BaseNetwork):
     def __init__(self, config: SectionProxy, n_vars: int):
         super().__init__(config, n_vars)
 
+
+class Network2D(_BaseNetwork):
+    """
+    Pytorch 2-D PDE neural network.
+
+    Args:
+        config: Config with hyperparameters
+        n_vars: Number of system variables
+    """
 
     def get_network(self, config: SectionProxy) -> torch.nn.Module:
         """
@@ -232,7 +225,6 @@ class Network2D(_BaseNetwork):
 
         return torch.nn.Sequential(*layers)
 
-
     def get_coeffs(self, min_deriv: int = 0, max_deriv: int = 5) -> torch.Tensor:
         """
         Get finite difference coefficients.
@@ -248,7 +240,8 @@ class Network2D(_BaseNetwork):
         assert min_deriv >= 0, 'Min derivative should be positive.'
         assert max_deriv < self.kernel_size, 'Max derivative should not be larger than kernel size.'
 
-        coeffs = np.zeros((2*(max_deriv-min_deriv+1), 1, self.kernel_size, self.kernel_size))
+        coeffs = np.zeros((2*(max_deriv-min_deriv+1), 1,
+                          self.kernel_size, self.kernel_size))
         # Finite difference coefficients
         for i in range(min_deriv, max_deriv+1):
             # Get coefficient for certain derivative with maximal acc order for given kernel_size
@@ -257,13 +250,17 @@ class Network2D(_BaseNetwork):
                 acc_order = 0
                 while len(fd_coeff) < self.kernel_size:
                     acc_order += 2
-                    fd_coeff = findiff.coefficients(i, acc_order)["center"]["coefficients"]
+                    fd_coeff = findiff.coefficients(
+                        i, acc_order)['center']['coefficients']
                 assert len(fd_coeff) == self.kernel_size, \
-                    "Finite difference coefficients do not match kernel"
-                coeffs[2*i, 0, :, int((self.kernel_size-1)/2)] = fd_coeff  # x direction
-                coeffs[2*i+1, 0, int((self.kernel_size-1)/2), :] = fd_coeff  # y direction
+                    'Finite difference coefficients do not match kernel'
+                coeffs[2*i, 0, :, int((self.kernel_size-1)/2)
+                       ] = fd_coeff  # x direction
+                coeffs[2*i+1, 0, int((self.kernel_size-1)/2),
+                       :] = fd_coeff  # y direction
             else:
-                coeffs[i, 0, int((self.kernel_size-1)/2), int((self.kernel_size-1)/2)] = 1.0
+                coeffs[i, 0, int((self.kernel_size-1)/2),
+                       int((self.kernel_size-1)/2)] = 1.0
         return torch.tensor(coeffs, requires_grad=False,
                             dtype=torch.get_default_dtype()).to(self.device)
 
@@ -283,11 +280,14 @@ class Network2D(_BaseNetwork):
         Returns:
             Spatial derivative tensor
         """
-        finite_diffs = torch.cat([F.conv2d(x[:, :1], self.coeffs),
-                                  F.conv2d(x[:, 1:], self.coeffs)], dim=1).to(self.device)
-        x_scales = torch.cat([torch.pow(dx.unsqueeze(1), i)
+        finite_diffs = torch.cat([
+            torch.nn.functional.conv2d(
+                input_tensor[:, i].unsqueeze(1),
+                self.coeffs) for i in range(input_tensor.shape[1])
+        ], dim=1)
+        x_scales = torch.cat([torch.pow(delta_x.unsqueeze(1), i)
                               for i in range(int(self.coeffs.shape[0]/2))], axis=-1)
-        y_scales = torch.cat([torch.pow(dy.unsqueeze(1), i)
+        y_scales = torch.cat([torch.pow(delta_y.unsqueeze(1), i)
                               for i in range(int(self.coeffs.shape[0]/2))], axis=-1)
         x_scales = torch.cat(
             (x_scales, x_scales), axis=1).unsqueeze(2).unsqueeze(2).repeat(
@@ -296,7 +296,6 @@ class Network2D(_BaseNetwork):
             (y_scales, y_scales), axis=1).unsqueeze(2).unsqueeze(2).repeat(
                 1, 1, finite_diffs.shape[-2], finite_diffs.shape[-1]).to(self.device)
         return torch.cat([finite_diffs[:, ::2]/x_scales, finite_diffs[:, 1::2]/y_scales], axis=1)
-
 
     def forward(self,
                 input_tensor: torch.Tensor,
@@ -317,7 +316,8 @@ class Network2D(_BaseNetwork):
         delta_x, delta_y = torch.split(delta_xy, 2, 2)
         input_tensor = self.calc_derivs(input_tensor, delta_x, delta_y)
         if self.use_param:
-            param = param.unsqueeze(-1).repeat(1, 1, input_tensor.shape[-2], input_tensor.shape[-1])
+            param = param.unsqueeze(-1).repeat(1, 1,
+                                               input_tensor.shape[-2], input_tensor.shape[-1])
             input_tensor = torch.cat([input_tensor, param], axis=1)
         # Forward through distributed parameter stack
         input_tensor = self.network(input_tensor)
