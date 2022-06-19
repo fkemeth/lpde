@@ -300,7 +300,7 @@ class Model:
             Solution obtained from numerical integration.
         """
         print('Integrating using learned PDE.')
-        spatial_dimensions = initial_condition.shape
+        spatial_dimensions = initial_condition.shape[1:]
         pars.append(spatial_dimensions)
         sol = solve_ivp(self.dfdt, [0, t_eval[-1]], initial_condition.flatten(),
                         t_eval=t_eval, args=pars, method='RK45')
