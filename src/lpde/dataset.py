@@ -33,7 +33,7 @@ class Dataset(torch.utils.data.Dataset):
         self.config = config
         self.x_data, self.delta_x, self.y_data = self.create_data()
 
-        self.boundary_conditions = 'periodic'
+        self.boundary_conditions = config['boundary_conditions']
 
     def create_data(self) -> list:
         """

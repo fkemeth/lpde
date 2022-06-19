@@ -85,12 +85,22 @@ class Model:
             Padded tensor containing the Y data.
         """
         if self.boundary_conditions == 'periodic':
-            data = torch.nn.functional.pad(
-                data, (self.net.get_off_set(), self.net.get_off_set()), mode='circular')
+            if len(data.shape)==3:
+                data = torch.nn.functional.pad(
+                    data, (self.net.get_off_set(), self.net.get_off_set()), mode='circular')
+            elif len(data.shape)==4:
+                data = torch.nn.functional.pad(
+                    data, (self.net.get_off_set(), self.net.get_off_set(),
+                           self.net.get_off_set(), self.net.get_off_set()), mode='circular')
             return data, target
         if self.boundary_conditions == 'no-flux':
-            data = torch.nn.functional.pad(
-                data, (self.net.get_off_set(), self.net.get_off_set()), mode='reflect')
+            if len(data.shape)==3:
+                data = torch.nn.functional.pad(
+                    data, (self.net.get_off_set(), self.net.get_off_set()), mode='reflect')
+            elif len(data.shape)==4:
+                data = torch.nn.functional.pad(
+                    data, (self.net.get_off_set(), self.net.get_off_set(),
+                           self.net.get_off_set(), self.net.get_off_set()), mode='reflect')
             return data, target
         return data, target[:, :, self.net.get_off_set():-self.net.get_off_set()]
 
