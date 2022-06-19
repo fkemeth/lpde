@@ -67,9 +67,6 @@ class Network1D(_BaseNetwork):
         n_vars: Number of system variables
     """
 
-    def __init__(self, config: SectionProxy, n_vars: int):
-        super().__init__(config, n_vars)
-
     def get_network(self, config: SectionProxy) -> torch.nn.Module:
         """
         Create network stack of PDE model.
@@ -186,9 +183,6 @@ class Network(Network1D):
         config: Config with hyperparameters
         n_vars: Number of system variables
     """
-
-    def __init__(self, config: SectionProxy, n_vars: int):
-        super().__init__(config, n_vars)
 
 
 class Network2D(_BaseNetwork):
