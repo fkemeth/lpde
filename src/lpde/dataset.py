@@ -29,13 +29,17 @@ class Dataset(torch.utils.data.Dataset):
         config: configfile with dataset parameters
     """
 
-    def __init__(self, config: SectionProxy) -> None:
+    def __init__(self, config: SectionProxy, boundary_width: int = 0) -> None:
         self.config = config
         self.x_data, self.delta_x, self.y_data = self.create_data()
 
         self.boundary_conditions = config['boundary_conditions']
         self.spatial_dimensions = self.x_data.shape[2:]
         self.num_spatial_dimensions = len(self.spatial_dimensions)
+
+        if self.boundary_conditions == 'functional':
+            self.boundary_functions = self.create_boundary_functions(
+                boundary_width)
 
     def create_data(self) -> list:
         """
