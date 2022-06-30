@@ -72,13 +72,19 @@ class Model:
             factor=config.getfloat('reduce_factor'),
             min_lr=1e-7)
 
-    def pad(self, data: torch.Tensor, target: torch.Tensor) -> Tuple:
+    def pad(self,
+            data: torch.Tensor,
+            target: torch.Tensor,
+            time: float=None,
+            boundary_functions: Tuple=(None)) -> Tuple:
         """
         Pad input/target depending on boundary conditions and kernel size.
 
         Args:
             data: Tensor containing the X data.
             target: Tensor containing the Y data.
+            time: Current time step (for functional boundaries)
+            boundary_values: Values at the boundaries. Used for functional boundary conditions.
 
         Returns:
             Padded tensor containing the X data.
@@ -105,6 +111,15 @@ class Model:
                     data, (self.net.get_off_set(), self.net.get_off_set(),
                            self.net.get_off_set(), self.net.get_off_set()), mode='reflect')
             return data, target
+
+        if self.boundary_conditions == 'functional' and time is not None:
+            if len(data.shape) == 3:
+                data = torch.cat([boundary_functions[0](time), data, boundary_functions[1](time)], axis=2)
+            elif len(data.shape) == 4:
+                data = torch.cat([boundary_functions[0][0](time), data, boundary_functions[0][1](time)], axis=2)
+                data = torch.cat([boundary_functions[1][0](time), data, boundary_functions[1][1](time)], axis=3)
+            return data, target
+
 
         # None
         if len(data.shape) == 3:
@@ -210,10 +225,11 @@ class Model:
         self.net.load_state_dict(torch.load(model_file_name))
 
     def dfdt(self,
-             time: float,  # pylint: disable=unused-argument
+             time: float,
              input_array: np.ndarray,
              delta_x: np.ndarray,
-             spatial_dimensions: list) -> np.ndarray:
+             spatial_dimensions: Tuple,
+             boundary_functions: Tuple=(None)) -> np.ndarray:
         """
         Return du/dt of the model.
 
@@ -221,7 +237,8 @@ class Model:
             t: Time step.
             input_array: Input snapshot.
             delta_x: Delta x of spatial grid.
-            num_spatial_dimensions: Number of spatial dimensions in the system
+            spatial_dimensions: Spatial dimensions of input
+            boundary_functions: list of boundary functions
 
         Returns:
             Time derative at each point of input snapshot.
@@ -237,7 +254,7 @@ class Model:
         delta_x = torch.tensor(delta_x, dtype=torch.get_default_dtype()
                                ).unsqueeze(0).to(self.net.device)
         if self.boundary_conditions == 'periodic' or self.boundary_conditions == 'no-flux':
-            input_array, _ = self.pad(input_array, None)
+            input_array, _ = self.pad(input_array, None, time, boundary_functions)
         return self.net.forward(input_array, delta_x)[0].cpu().detach().numpy().flatten()
 
     def integrate_svd(self,
@@ -286,7 +303,7 @@ class Model:
             data.append(prediction.reshape(2, -1))
         return np.array(data)
 
-    def integrate(self, initial_condition, pars, t_eval):
+    def integrate(self, initial_condition, pars, t_eval, boundary_functions: Tuple=(None)):
         """
         Integrate initial condition using the learned model.
 
@@ -294,6 +311,7 @@ class Model:
             initial_condition:  Initial snapshot.
             pars: Parameters of the system.
             t_eval: Time values at which to return solution.
+            boundary_functions: Tuple of functions specifying boundary values
 
         Returns:
             Time values at which the solution was evaluated
@@ -302,6 +320,7 @@ class Model:
         print('Integrating using learned PDE.')
         spatial_dimensions = initial_condition.shape[1:]
         pars.append(spatial_dimensions)
+        pars.append(boundary_functions)
         sol = solve_ivp(self.dfdt, [0, t_eval[-1]], initial_condition.flatten(),
                         t_eval=t_eval, args=pars, method='RK45')
         if sol.status == -1:
