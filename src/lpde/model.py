@@ -75,8 +75,8 @@ class Model:
     def pad(self,
             data: torch.Tensor,
             target: torch.Tensor,
-            time: float=None,
-            boundary_functions: Tuple=(None)) -> Tuple:
+            time: float = None,
+            boundary_functions: Tuple = (None)) -> Tuple:
         """
         Pad input/target depending on boundary conditions and kernel size.
 
@@ -114,12 +114,29 @@ class Model:
 
         if self.boundary_conditions == 'functional' and time is not None:
             if len(data.shape) == 3:
-                data = torch.cat([boundary_functions[0](time), data, boundary_functions[1](time)], axis=2)
+                data = torch.cat(
+                    [torch.tensor(boundary_functions[0](time)[np.newaxis, :],
+                                  dtype=torch.get_default_dtype()).to(self.net.device),
+                     data,
+                     torch.tensor(boundary_functions[1](time)[np.newaxis, :],
+                                  dtype=torch.get_default_dtype()).to(self.net.device)],
+                    axis=2)
             elif len(data.shape) == 4:
-                data = torch.cat([boundary_functions[0][0](time), data, boundary_functions[0][1](time)], axis=2)
-                data = torch.cat([boundary_functions[1][0](time), data, boundary_functions[1][1](time)], axis=3)
+                data = torch.cat(
+                    [torch.tensor(boundary_functions[0][0](time)[np.newaxis, :],
+                                  dtype=torch.get_default_dtype()).to(self.net.device),
+                     data,
+                     torch.tensor(boundary_functions[0][1](time)[np.newaxis, :],
+                                  dtype=torch.get_default_dtype()).to(self.net.device)],
+                    axis=2)
+                data = torch.cat(
+                    [torch.tensor(boundary_functions[1][0](time)[np.newaxis, :],
+                                  dtype=torch.get_default_dtype()).to(self.net.device),
+                     data,
+                     torch.tensor(boundary_functions[1][1](time)[np.newaxis, :],
+                                  dtype=torch.get_default_dtype()).to(self.net.device)],
+                    axis=3)
             return data, target
-
 
         # None
         if len(data.shape) == 3:
@@ -229,7 +246,7 @@ class Model:
              input_array: np.ndarray,
              delta_x: np.ndarray,
              spatial_dimensions: Tuple,
-             boundary_functions: Tuple=(None)) -> np.ndarray:
+             boundary_functions: Tuple = (None)) -> np.ndarray:
         """
         Return du/dt of the model.
 
@@ -254,7 +271,11 @@ class Model:
         delta_x = torch.tensor(delta_x, dtype=torch.get_default_dtype()
                                ).unsqueeze(0).to(self.net.device)
         if self.boundary_conditions == 'periodic' or self.boundary_conditions == 'no-flux':
-            input_array, _ = self.pad(input_array, None, time, boundary_functions)
+            input_array, _ = self.pad(input_array, None)
+        if self.boundary_conditions == 'functional':
+            input_array, _ = self.pad(
+                input_array, None, time, boundary_functions)
+
         return self.net.forward(input_array, delta_x)[0].cpu().detach().numpy().flatten()
 
     def integrate_svd(self,
@@ -303,7 +324,7 @@ class Model:
             data.append(prediction.reshape(2, -1))
         return np.array(data)
 
-    def integrate(self, initial_condition, pars, t_eval, boundary_functions: Tuple=(None)):
+    def integrate(self, initial_condition, pars, t_eval, boundary_functions: Tuple = (None)):
         """
         Integrate initial condition using the learned model.
 
