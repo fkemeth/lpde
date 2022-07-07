@@ -93,15 +93,6 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
         [delta_x.detach().numpy()],
         t_eval=t_eval,
         boundary_functions=dataset_test.boundary_functions)
-    # # Make predictions
-    # t_eval = np.linspace(0,
-    #                      config['SYSTEM'].getfloat(
-    #                          'tmax')-config['SYSTEM'].getfloat('tmin'),
-    #                      config['SYSTEM'].getint('n_time_steps')+1, endpoint=True)
-    # initial_condition, delta_x, _ = dataset_test[0]
-    # _, predictions = model.integrate(initial_condition.detach().numpy(),
-    #                                  [delta_x.detach().numpy()],
-    #                                  t_eval=t_eval)
 
     # Visualize training data
     fig = plt.figure(figsize=(8, 3.6))

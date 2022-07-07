@@ -60,8 +60,8 @@ def create_initial_conditions(n_grid_points: int) -> np.ndarray:
     Returns:
         Array with initial values
     """
-    return 0.5 * np.random.randn(int(2*n_grid_points)) + \
-        0.5j * np.random.randn(int(2*n_grid_points))
+    return 0.5 * np.random.randn(n_grid_points) + \
+        0.5j * np.random.randn(n_grid_points)
 
 
 def integrate(n_grid_points: int = 256,
@@ -114,8 +114,6 @@ def integrate(n_grid_points: int = 256,
                     t_eval=t_eval,
                     args=(length, c_1, c_2))
     data_dict['data'] = sol.y.T
-    data_dict['data'] = data_dict['data'][:, :n_grid_points] + \
-        1.0j*data_dict['data'][:, n_grid_points:]
     return data_dict
 
 
