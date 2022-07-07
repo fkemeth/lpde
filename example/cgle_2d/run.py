@@ -89,9 +89,9 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
                          config['SYSTEM'].getfloat(
                              'tmax')-config['SYSTEM'].getfloat('tmin'),
                          config['SYSTEM'].getint('n_time_steps')+1, endpoint=True)
-    initial_condition, delta_x, _ = dataset_test[0]
+    initial_condition, delta_xy, _ = dataset_test[0]
     _, predictions = model.integrate(initial_condition.detach().numpy(),
-                                     [delta_x.detach().numpy()],
+                                     [delta_xy.detach().numpy()],
                                      t_eval=t_eval)
 
     # Visualize training data

@@ -127,6 +127,8 @@ def integrate(n_grid_points: int = 80,
     # Set time vector.
     t_eval = np.linspace(t_min, t_max, n_time_steps+1, endpoint=True)
 
+    data_dict['t_eval'] = t_eval-t_min
+
     # Compute solution.
     print('Computing the solution.')
     sol = solve_ivp(dudt,
@@ -184,10 +186,10 @@ class CGLEDataset(Dataset):
                             data_dict['n_grid_points'], len(data))
         delta_xy = np.stack((delta_x, delta_y), axis=-1)
 
-        x_data, delta_x, y_data = get_dudt_and_reshape_data(data,
-                                                            delta_x,
-                                                            delta_t,
-                                                            self.config.getint('fd_dt_acc'))
+        x_data, delta_xy, y_data = get_dudt_and_reshape_data(data,
+                                                             delta_xy,
+                                                             delta_t,
+                                                             self.config.getint('fd_dt_acc'))
 
         # Introduce variable dimension if it does not exist yet
         if len(x_data.shape) == 2:
