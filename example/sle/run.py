@@ -85,7 +85,7 @@ def main(config: ConfigParser):  # pylint: disable-msg=too-many-locals
         val_loss_list.append(val_loss)
 
     # Make predictions
-    t_eval = dataset_test.t_eval[:10]
+    t_eval = dataset_test.t_eval
     initial_condition, delta_x, _ = dataset_test[0]
     _, predictions = model.integrate(
         initial_condition.detach().numpy()[:, boundary_width:-boundary_width],
