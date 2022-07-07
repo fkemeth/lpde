@@ -7,6 +7,9 @@
 .ipynb_checkpoints/
 
 # Python egg metadata, regenerated from source files by setuptools.
-/*.egg-info
+*.egg-info
+
+# Figures
+*.png
 
 *__pycache__/
